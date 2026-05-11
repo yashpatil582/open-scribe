@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+.python-version
+
+# IDE
+.vscode/
+.idea/
+.DS_Store
+
+# Notebooks
+.ipynb_checkpoints/
+
+# Data — never commit clinical or downloaded eval data
+data/
+datasets/
+*.wav
+*.flac
+*.mp3
+*.m4a
+!examples/sample.wav
+
+# Models / caches
+models/
+.cache/
+*.pt
+*.bin
+*.safetensors
+
+# Eval outputs (commit only the curated results JSON, not raw runs)
+eval/results/raw/
+eval/runs/
+
+# Local secrets
+.env
+*.key

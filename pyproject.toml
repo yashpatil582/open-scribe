@@ -1,0 +1,69 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "open-scribe"
+version = "0.1.0"
+description = "Open-source FHIR-native medical scribe: encounter audio -> SOAP note -> ICD-10/CPT -> FHIR DocumentReference"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "Apache-2.0" }
+authors = [{ name = "Yash Patil" }]
+keywords = ["healthcare", "ai", "medical-scribe", "fhir", "asr", "llm", "soap"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Healthcare Industry",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
+dependencies = [
+    "faster-whisper>=1.0.3",
+    "fhir.resources>=7.1.0",
+    "pydantic>=2.5",
+    "click>=8.1",
+    "rich>=13.7",
+]
+
+[project.optional-dependencies]
+notes = [
+    "instructor>=1.4",
+    "openai>=1.40",
+]
+diarize = [
+    "pyannote.audio>=3.3",
+    "torch>=2.2",
+]
+eval = [
+    "evaluate>=0.4",
+    "rouge-score>=0.1.2",
+    "scikit-learn>=1.4",
+    "datasets>=2.20",
+]
+dev = [
+    "pytest>=8",
+    "ruff>=0.5",
+    "ipykernel>=6.29",
+]
+full = [
+    "open-scribe[notes,diarize,eval,dev]",
+]
+
+[project.scripts]
+open-scribe = "open_scribe.pipeline:main"
+
+[project.urls]
+Homepage = "https://github.com/yashpatil/open-scribe"
+Issues = "https://github.com/yashpatil/open-scribe/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
