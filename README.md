@@ -1,5 +1,9 @@
 # open-scribe
 
+[![CI](https://github.com/yashpatil582/open-scribe/actions/workflows/ci.yml/badge.svg)](https://github.com/yashpatil582/open-scribe/actions/workflows/ci.yml)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+
 Open-source, FHIR-native medical scribe baseline.
 
 **Pipeline:** encounter audio → SOAP note → ICD-10 / CPT suggestions → FHIR `DocumentReference`, with an eval harness reporting section-level F1 against gold notes.
@@ -60,12 +64,16 @@ Methodology:
 - **Whole-note F1**: token-level F1 between predicted SOAP note (rendered as text) and the gold note. Token-level multiset overlap; punctuation stripped; case-folded.
 - **Setup**: Llama 3.3 70B via Groq, default prompt (`src/open_scribe/note_gen.py`), gold transcripts (no ASR error introduced).
 
-| Dataset    | n  | Whole-note F1 | Precision | Recall | Notes                                            |
-|------------|----|--------------:|----------:|-------:|--------------------------------------------------|
-| PriMock57  | 29 |         0.275 |     0.256 |  0.314 | 29 of 57 — Groq free-tier per-org daily cap hit  |
-| ACI-Bench  |  — |             — |         — |      — | Loader implemented, eval not yet run             |
+| Dataset    | n      | Whole-note F1 | Precision | Recall | Notes                                                    |
+|------------|--------|--------------:|----------:|-------:|----------------------------------------------------------|
+| PriMock57  | 29 / 57 |        0.275 |     0.256 |  0.314 | Free-tier cap hit; gold notes are dense shorthand        |
+| ACI-Bench  | 35 / 40 |        0.447 |     0.709 |  0.338 | Test split (`clinicalnlp_taskB_test1`); free-tier cap hit |
 
-> **Note on the partial run.** Groq's free tier caps tokens-per-day at the *organization* level (~100K). PriMock57 consultations average ~4K tokens each, so a single org-day completes ~25 examples. Generating new API keys within the same org does **not** raise the cap — verified by trying it. Options to complete the full 57: (a) wait 24h, (b) upgrade to Groq Dev tier, (c) point at another OpenAI-compatible endpoint.
+> **Interpreting the gap.** ACI-Bench scores ~1.6× higher because its gold notes are full English prose (CHIEF COMPLAINT, HISTORY OF PRESENT ILLNESS sections) that match the LLM's natural output style. PriMock57's gold uses dense clinician shorthand (`3/7 hx of diarrhea`, `LLQ pain`) — the model produces clinically equivalent content but rarely shares surface tokens. The metric is honest; the system isn't broken.
+>
+> Precision > recall on ACI-Bench tells you the LLM's notes are mostly-correct content (high precision = few extraneous tokens) but shorter than gold (low recall = missing some sections). A longer system prompt with explicit section requirements would close the gap.
+
+> **Rate-limit note.** Groq's free tier caps tokens-per-day at the *organization* level (~100K). PriMock57 consultations average ~4K tokens each, so a single org-day completes ~25 examples. Generating new API keys within the same org does **not** raise the cap — verified by trying it. Options to complete the full splits: (a) wait 24h and use `--resume`, (b) upgrade to Groq Dev tier, (c) point at another OpenAI-compatible endpoint via `OPEN_SCRIBE_BASE_URL`.
 
 **On the number.** F1 ≈ 0.25 is honest, not spectacular. Why this number, and why it doesn't mean the system is broken:
 
@@ -119,7 +127,7 @@ DocumentReference.json (FHIR R4)
 - [x] Day 6–7: pipeline.py end-to-end; demo notebook executed with outputs persisted
 - [x] Day 8–9: Eval harness on PriMock57 — 29/57 examples, whole-note F1 = 0.275 (free-tier capped)
 - [x] Day 10: ICD-10 / CPT suggestion stage with bundled validation lookup
-- [~] Day 11: ACI-Bench loader implemented; eval pending (needs paid LLM tier)
+- [x] Day 11: ACI-Bench eval — 35/40 examples, whole-note F1 = 0.447
 - [ ] Day 12–13: README polish, demo recording, push public
 
 ## Why this exists

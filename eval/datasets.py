@@ -96,37 +96,65 @@ def load_primock57(data_dir: Path, limit: int | None = None) -> Iterator[Example
         )
 
 
-def load_acibench(data_dir: Path, limit: int | None = None) -> Iterator[Example]:
-    """Yield ACI-Bench examples.
+def _parse_acibench_dialogue(dialogue_text: str) -> list[Turn]:
+    """Split an ACI-Bench dialogue string into Turns.
+
+    Dialogue format: each line is ``[speaker] utterance`` (e.g. ``[doctor] hi``).
+    Multi-line utterances continue until the next ``[speaker]`` marker.
+    """
+    turns: list[Turn] = []
+    current_speaker: str | None = None
+    current_text: list[str] = []
+
+    def _flush() -> None:
+        if current_text:
+            joined = " ".join(s.strip() for s in current_text).strip()
+            if joined:
+                turns.append(Turn(speaker=current_speaker, start=0.0, end=0.0, text=joined))
+
+    for line in dialogue_text.splitlines():
+        m = re.match(r"^\[([^\]]+)\]\s*(.*)$", line)
+        if m:
+            _flush()
+            current_speaker = m.group(1).strip().lower()
+            current_text = [m.group(2)]
+        else:
+            current_text.append(line)
+    _flush()
+    return turns
+
+
+def load_acibench(
+    data_dir: Path,
+    limit: int | None = None,
+    split: str = "clinicalnlp_taskB_test1",
+) -> Iterator[Example]:
+    """Yield ACI-Bench examples from a CSV split.
 
     Expects the upstream layout from https://github.com/wyim/aci-bench:
-    a ``data/challenge_data/`` directory with ``src_experiment/`` (transcripts)
-    and ``tgt_experiment/`` (notes) split into train/valid/test. We pull from
-    the test split for held-out eval.
+    ``data/challenge_data/<split>.csv`` with columns
+    ``dataset, encounter_id, dialogue, note``.
     """
-    test_src = data_dir / "data" / "challenge_data" / "src_experiment" / "test"
-    test_tgt = data_dir / "data" / "challenge_data" / "tgt_experiment" / "test"
+    import csv
 
-    if not test_src.exists() or not test_tgt.exists():
+    csv_path = data_dir / "data" / "challenge_data" / f"{split}.csv"
+    if not csv_path.exists():
         raise FileNotFoundError(
-            f"ACI-Bench layout not found under {data_dir}. "
+            f"ACI-Bench split not found at {csv_path}. "
             "Clone https://github.com/wyim/aci-bench and pass --data-dir <clone-path>."
         )
 
-    transcript_files = sorted(test_src.glob("*.txt"))
-    if limit:
-        transcript_files = transcript_files[:limit]
-
-    for src_path in transcript_files:
-        cid = src_path.stem
-        tgt_path = test_tgt / src_path.name
-        if not tgt_path.exists():
-            continue
-        transcript_text = src_path.read_text(encoding="utf-8")
-        note_text = tgt_path.read_text(encoding="utf-8")
-        transcript = Transcript(
-            turns=[Turn(speaker=None, start=0.0, end=0.0, text=transcript_text)],
-            language="en",
-            duration=0.0,
-        )
-        yield Example(id=cid, gold_note=note_text, gold_transcript=transcript)
+    with csv_path.open(encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        count = 0
+        for row in reader:
+            if limit is not None and count >= limit:
+                break
+            count += 1
+            turns = _parse_acibench_dialogue(row["dialogue"])
+            transcript = Transcript(turns=turns, language="en", duration=0.0)
+            yield Example(
+                id=row["encounter_id"],
+                gold_note=row["note"],
+                gold_transcript=transcript,
+            )
