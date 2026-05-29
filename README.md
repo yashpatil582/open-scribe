@@ -64,16 +64,16 @@ Methodology:
 - **Whole-note F1**: token-level F1 between predicted SOAP note (rendered as text) and the gold note. Token-level multiset overlap; punctuation stripped; case-folded.
 - **Setup**: Llama 3.3 70B via Groq, default prompt (`src/open_scribe/note_gen.py`), gold transcripts (no ASR error introduced).
 
-| Dataset    | n      | Whole-note F1 | Precision | Recall | Notes                                                    |
-|------------|--------|--------------:|----------:|-------:|----------------------------------------------------------|
-| PriMock57  | 29 / 57 |        0.275 |     0.256 |  0.314 | Free-tier cap hit; gold notes are dense shorthand        |
-| ACI-Bench  | 35 / 40 |        0.447 |     0.709 |  0.338 | Test split (`clinicalnlp_taskB_test1`); free-tier cap hit |
+| Dataset    | n         | Whole-note F1 | Precision | Recall | Notes                                                |
+|------------|-----------|--------------:|----------:|-------:|------------------------------------------------------|
+| PriMock57  | **57 / 57** |     **0.279** | 0.266     | 0.315  | Full split; gold notes are dense clinician shorthand |
+| ACI-Bench  | 35 / 40   |     **0.447** | 0.709     | 0.338  | Test split (`clinicalnlp_taskB_test1`)              |
 
 > **Interpreting the gap.** ACI-Bench scores ~1.6× higher because its gold notes are full English prose (CHIEF COMPLAINT, HISTORY OF PRESENT ILLNESS sections) that match the LLM's natural output style. PriMock57's gold uses dense clinician shorthand (`3/7 hx of diarrhea`, `LLQ pain`) — the model produces clinically equivalent content but rarely shares surface tokens. The metric is honest; the system isn't broken.
 >
 > Precision > recall on ACI-Bench tells you the LLM's notes are mostly-correct content (high precision = few extraneous tokens) but shorter than gold (low recall = missing some sections). A longer system prompt with explicit section requirements would close the gap.
 
-> **Rate-limit note.** Groq's free tier caps tokens-per-day at the *organization* level (~100K). PriMock57 consultations average ~4K tokens each, so a single org-day completes ~25 examples. Generating new API keys within the same org does **not** raise the cap — verified by trying it. Options to complete the full splits: (a) wait 24h and use `--resume`, (b) upgrade to Groq Dev tier, (c) point at another OpenAI-compatible endpoint via `OPEN_SCRIBE_BASE_URL`.
+> **How the full PriMock57 run was completed on the free tier.** Groq's free-tier `llama-3.3-70b-versatile` caps at ~100K tokens-per-day per *organization* (not per key — generating new keys in the same org doesn't help). The `eval/run_eval.py --resume` flag merges new examples into the existing results file, so the full 57 was completed across three same-day runs as the rolling token bucket refilled. Total elapsed: ~12 minutes of wall-clock LLM time spread over ~30 minutes of polling. Alternatively: paid Groq Dev tier or any other OpenAI-compatible endpoint via `OPEN_SCRIBE_BASE_URL`.
 
 **On the number.** F1 ≈ 0.25 is honest, not spectacular. Why this number, and why it doesn't mean the system is broken:
 
@@ -125,7 +125,7 @@ DocumentReference.json (FHIR R4)
 - [x] Day 3–4: Note generation with structured output (SOAP JSON schema) via `instructor`
 - [x] Day 5: FHIR R4B Bundle emission (Patient + Encounter + DocumentReference), JSON-validated
 - [x] Day 6–7: pipeline.py end-to-end; demo notebook executed with outputs persisted
-- [x] Day 8–9: Eval harness on PriMock57 — 29/57 examples, whole-note F1 = 0.275 (free-tier capped)
+- [x] Day 8–9: Eval harness on PriMock57 — **57/57 examples**, whole-note F1 = 0.279
 - [x] Day 10: ICD-10 / CPT suggestion stage with bundled validation lookup
 - [x] Day 11: ACI-Bench eval — 35/40 examples, whole-note F1 = 0.447
 - [ ] Day 12–13: README polish, demo recording, push public
