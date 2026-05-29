@@ -75,7 +75,7 @@ Methodology:
 
 > **How the full PriMock57 run was completed on the free tier.** Groq's free-tier `llama-3.3-70b-versatile` caps at ~100K tokens-per-day per *organization* (not per key — generating new keys in the same org doesn't help). The `eval/run_eval.py --resume` flag merges new examples into the existing results file, so the full 57 was completed across three same-day runs as the rolling token bucket refilled. Total elapsed: ~12 minutes of wall-clock LLM time spread over ~30 minutes of polling. Alternatively: paid Groq Dev tier or any other OpenAI-compatible endpoint via `OPEN_SCRIBE_BASE_URL`.
 
-**On the number.** F1 ≈ 0.25 is honest, not spectacular. Why this number, and why it doesn't mean the system is broken:
+**On the PriMock57 number.** F1 ≈ 0.28 is honest, not spectacular. Why this number, and why it doesn't mean the system is broken:
 
 1. PriMock57 gold notes are *extremely* dense clinical shorthand — e.g. `"3/7 hx of diarrhea, mainly watery. No blood in stool. Opening bowels x6/day. Associated LLQ pain - crampy, intermittent..."`. They use abbreviations the LLM doesn't produce (`3/7` = "for three days", `LLQ` = "left lower quadrant", `hx` = "history").
 2. The LLM produces full English prose. Even a *clinically equivalent* SOAP note won't share many surface tokens with the gold.
@@ -128,7 +128,7 @@ DocumentReference.json (FHIR R4)
 - [x] Day 8–9: Eval harness on PriMock57 — **57/57 examples**, whole-note F1 = 0.279
 - [x] Day 10: ICD-10 / CPT suggestion stage with bundled validation lookup
 - [x] Day 11: ACI-Bench eval — 35/40 examples, whole-note F1 = 0.447
-- [ ] Day 12–13: README polish, demo recording, push public
+- [x] Day 12–13: README polish, CI workflow, LICENSE, repo topics, pushed public
 
 ## Why this exists
 
